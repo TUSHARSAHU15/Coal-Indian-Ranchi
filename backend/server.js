@@ -66,14 +66,19 @@ app.use(express.json({ limit: '10mb' })); // Support webcam base64 photo capture
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health Check
-app.get('/api/health', (req, res) => {
+const mongoose = require('mongoose');
+const healthHandler = (req, res) => {
+  const dbConnected = mongoose.connection && mongoose.connection.readyState === 1;
   res.status(200).json({
     success: true,
     message: 'CCL DVMS Enterprise v2.0 API is running',
     version: '2.0.0',
+    db: dbConnected ? 'connected' : 'connecting_or_standalone',
     timestamp: new Date()
   });
-});
+};
+app.get('/api/health', healthHandler);
+app.get('/api/v1/health', healthHandler);
 
 // API v1 Routes
 app.use('/api/v1/auth', authRoutes);
@@ -151,15 +156,19 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
-  try {
-    const User = require('./src/models/User');
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log('No users found in database. Auto-seeding initial departments & system users...');
-      await seedDatabase();
+  if (mongoose.connection && mongoose.connection.readyState === 1) {
+    try {
+      const User = require('./src/models/User');
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        console.log('No users found in database. Auto-seeding initial departments & system users...');
+        await seedDatabase();
+      }
+    } catch (seedErr) {
+      console.warn('[AutoSeed Notice]:', seedErr.message);
     }
-  } catch (seedErr) {
-    console.warn('[AutoSeed Notice]:', seedErr.message);
+  } else {
+    console.warn('[Startup Notice] MongoDB is not connected yet. Server running for static frontend and API health monitoring.');
   }
   server.listen(PORT, () => {
     console.log(`CCL DVMS Enterprise API running on http://localhost:${PORT}`);
