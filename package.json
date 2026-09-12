@@ -1,0 +1,22 @@
+{
+  "name": "ccl-digital-visitor",
+  "version": "2.0.0",
+  "description": "Central Coalfields Limited - Digital Visitor Management System (CCL DVMS)",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "render-build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npm run dev",
+    "tunnel": "cloudflared tunnel --url http://localhost:5173"
+  },
+  "keywords": [
+    "ccl",
+    "visitor-management",
+    "dvms"
+  ],
+  "author": "CCL",
+  "license": "ISC",
+  "type": "commonjs"
+}
