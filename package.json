@@ -5,8 +5,8 @@
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
-    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
-    "render-build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "build": "npm install --prefix backend --include=dev && npm install --prefix frontend --include=dev && npm run build --prefix frontend",
+    "render-build": "npm install --prefix backend --include=dev && npm install --prefix frontend --include=dev && npm run build --prefix frontend",
     "backend": "cd backend && node server.js",
     "frontend": "cd frontend && npm run dev",
     "tunnel": "cloudflared tunnel --url http://localhost:5173"
