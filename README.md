@@ -4,6 +4,8 @@ Enterprise full-stack Digital Visitor Management System for Central Coalfields L
 
 ## Live Deployment on Render (render.com)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/TUSHARSAHU15/Coal-Indian-Ranchi)
+
 This repository is pre-configured for a **Single Unified Web Service** on Render with automatic frontend building and backend serving.
 
 ### 1. Build & Start Commands
