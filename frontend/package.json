@@ -12,7 +12,6 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.9",
-    "ccl-digital-visitor": "file:..",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.475.0",
     "postcss": "^8.4.49",

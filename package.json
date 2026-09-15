@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "description": "Central Coalfields Limited - Digital Visitor Management System (CCL DVMS)",
   "main": "backend/server.js",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "start": "node backend/server.js",
     "build": "npm install --prefix backend --include=dev && npm install --prefix frontend --include=dev && npm run build --prefix frontend",
