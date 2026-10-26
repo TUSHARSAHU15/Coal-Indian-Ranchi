@@ -20,6 +20,7 @@ frontend/.env.*
 dist/
 dist-ssr/
 build/
+!frontend/dist/
 
 # Logs
 logs
