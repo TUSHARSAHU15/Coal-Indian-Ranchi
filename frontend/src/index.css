@@ -354,16 +354,44 @@ td small { color: #829399; font-size: .68rem; margin-top: .22rem; }
 .dvms-register-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem 1rem;
+  gap: 1rem 1.15rem;
 }
-.dvms-register-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #334155;
-  letter-spacing: 0.01em;
+.form-field {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.35rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.field-label {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  min-height: 20px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  letter-spacing: 0.01em !important;
+}
+.req-star {
+  color: #ef4444 !important;
+  font-weight: 800 !important;
+  margin-left: 2px !important;
+}
+.field-hint {
+  font-size: 0.72rem !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+.field-subtext {
+  font-size: 0.7rem !important;
+  color: #64748b !important;
+  margin-top: 0.15rem !important;
+}
+.field-error {
+  color: #dc2626 !important;
+  font-size: 0.7rem !important;
+  margin-top: 0.15rem !important;
 }
 .dvms-register-grid input,
 .dvms-register-grid select {
@@ -376,6 +404,7 @@ td small { color: #829399; font-size: .68rem; margin-top: .22rem; }
   color: #0f172a;
   transition: all 0.15s ease-in-out;
   box-sizing: border-box;
+  width: 100%;
 }
 .dvms-register-grid input:focus,
 .dvms-register-grid select:focus {

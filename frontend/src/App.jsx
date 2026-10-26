@@ -2768,8 +2768,10 @@ function VisitorSelfRegister() {
         {error && <div className="alert error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
         <form onSubmit={handleSubmitPassRequest} noValidate className="dvms-register-grid">
-          <label style={{ gridColumn: 'span 1' }}>
-            Full Name <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Full Name <span className="req-star">*</span></span>
+            </span>
             <input
               required
               value={form.fullName}
@@ -2777,14 +2779,14 @@ function VisitorSelfRegister() {
               placeholder="e.g. Rajesh Kumar"
               style={fieldErrors.fullName ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
             />
-            {fieldErrors.fullName && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.fullName}</span>}
+            {fieldErrors.fullName && <span className="field-error">{fieldErrors.fullName}</span>}
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Mobile Number <span style={{ color: '#ef4444' }}>*</span></span>
-              <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{form.mobile.length}/10 digits</span>
-            </div>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Mobile Number <span className="req-star">*</span></span>
+              <span className="field-hint">{form.mobile.length}/10 digits</span>
+            </span>
             <input
               required
               type="tel"
@@ -2794,11 +2796,13 @@ function VisitorSelfRegister() {
               placeholder="10-digit mobile number"
               style={fieldErrors.mobile ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
             />
-            {fieldErrors.mobile && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.mobile}</span>}
+            {fieldErrors.mobile && <span className="field-error">{fieldErrors.mobile}</span>}
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            Email Address <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Email Address <span className="req-star">*</span></span>
+            </span>
             <input
               required
               type="email"
@@ -2807,11 +2811,14 @@ function VisitorSelfRegister() {
               placeholder="name@example.com"
               style={fieldErrors.email ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
             />
-            {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.email}</span>}
+            {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            Company / Organization <small style={{ color: '#64748b', fontWeight: 400 }}>(optional)</small>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Company / Organization</span>
+              <span className="field-hint">(optional)</span>
+            </span>
             <input
               value={form.companyName}
               onChange={update('companyName')}
@@ -2819,8 +2826,10 @@ function VisitorSelfRegister() {
             />
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            Department to Visit <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Department to Visit <span className="req-star">*</span></span>
+            </span>
             <select
               required
               value={form.departmentId}
@@ -2834,11 +2843,13 @@ function VisitorSelfRegister() {
                 </option>
               ))}
             </select>
-            {fieldErrors.departmentId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.departmentId}</span>}
+            {fieldErrors.departmentId && <span className="field-error">{fieldErrors.departmentId}</span>}
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            Person to Visit (Host) <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Person to Visit (Host) <span className="req-star">*</span></span>
+            </span>
             <select
               required
               value={form.hostEmployeeId}
@@ -2852,11 +2863,13 @@ function VisitorSelfRegister() {
                 </option>
               ))}
             </select>
-            {fieldErrors.hostEmployeeId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.hostEmployeeId}</span>}
+            {fieldErrors.hostEmployeeId && <span className="field-error">{fieldErrors.hostEmployeeId}</span>}
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            Preferred Visit Date <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Preferred Visit Date <span className="req-star">*</span></span>
+            </span>
             <input
               required
               type="date"
@@ -2864,11 +2877,13 @@ function VisitorSelfRegister() {
               onChange={update('visitDate')}
               style={fieldErrors.visitDate ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
             />
-            {fieldErrors.visitDate && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.visitDate}</span>}
+            {fieldErrors.visitDate && <span className="field-error">{fieldErrors.visitDate}</span>}
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            Preferred Arrival Time
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Preferred Arrival Time</span>
+            </span>
             <select value={form.visitTime} onChange={update('visitTime')}>
               <option value="09:00 AM">09:00 AM - Morning Slot 1</option>
               <option value="10:00 AM">10:00 AM - Morning Slot 2</option>
@@ -2879,8 +2894,10 @@ function VisitorSelfRegister() {
             </select>
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            Government ID Type <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>Government ID Type <span className="req-star">*</span></span>
+            </span>
             <select value={form.govtIdType} onChange={handleGovtIdTypeChange}>
               {Object.keys(GOVT_ID_CONFIG).map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -2888,8 +2905,10 @@ function VisitorSelfRegister() {
             </select>
           </label>
 
-          <label style={{ gridColumn: 'span 1' }}>
-            {form.govtIdType} Number <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 1' }}>
+            <span className="field-label">
+              <span>{form.govtIdType} Number <span className="req-star">*</span></span>
+            </span>
             <input
               required
               value={form.govtIdNumber}
@@ -2899,14 +2918,16 @@ function VisitorSelfRegister() {
               style={fieldErrors.govtIdNumber ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
             />
             {fieldErrors.govtIdNumber ? (
-              <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.govtIdNumber}</span>
+              <span className="field-error">{fieldErrors.govtIdNumber}</span>
             ) : (
-              <span style={{ color: '#64748b', fontSize: '0.7rem' }}>{currentIdConfig.hint}</span>
+              <span className="field-subtext">{currentIdConfig.hint}</span>
             )}
           </label>
 
-          <label style={{ gridColumn: 'span 2' }}>
-            Purpose of Visit <span style={{ color: '#ef4444' }}>*</span>
+          <label className="form-field" style={{ gridColumn: 'span 2' }}>
+            <span className="field-label">
+              <span>Purpose of Visit <span className="req-star">*</span></span>
+            </span>
             <input
               required
               value={form.purpose}
@@ -2914,7 +2935,7 @@ function VisitorSelfRegister() {
               placeholder="e.g. Official vendor meeting, equipment delivery inspection"
               style={fieldErrors.purpose ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
             />
-            {fieldErrors.purpose && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.purpose}</span>}
+            {fieldErrors.purpose && <span className="field-error">{fieldErrors.purpose}</span>}
           </label>
 
           <div style={{ gridColumn: 'span 2', marginTop: '0.5rem' }}>
