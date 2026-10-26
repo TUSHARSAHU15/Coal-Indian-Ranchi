@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Html5Qrcode } from 'html5-qrcode';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth as firebaseAuth } from './firebase';
 import {
   Activity, ArrowRight, BarChart3, Building2, CheckCircle2, ChevronLeft,
   ClipboardCheck, DoorOpen, LogOut, Menu, ScanLine, ShieldCheck, Users,
@@ -2505,6 +2507,7 @@ function VisitorSelfRegister() {
   const [devOtp, setDevOtp] = useState('');
   const [carrierNotice, setCarrierNotice] = useState('');
   const [isLiveDelivered, setIsLiveDelivered] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
@@ -2574,6 +2577,7 @@ function VisitorSelfRegister() {
       setOtpSent(false);
       setOtpCode('');
       setOtpError('');
+      setConfirmationResult(null);
     }
   };
 
@@ -2588,18 +2592,54 @@ function VisitorSelfRegister() {
     setOtpSending(true);
     setOtpError('');
     setError('');
+
+    let sentViaFirebase = false;
+
+    // 1. Send live carrier SMS via Google Firebase Phone Auth (100% Free)
+    try {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: () => {}
+        });
+      }
+      const confirmation = await signInWithPhoneNumber(firebaseAuth, `+91${cleanMobile}`, window.recaptchaVerifier);
+      setConfirmationResult(confirmation);
+      sentViaFirebase = true;
+      setIsLiveDelivered(true);
+      setCarrierNotice('Live carrier SMS dispatched via Google Firebase Gateway.');
+    } catch (fbErr) {
+      console.warn('Firebase SMS Dispatch Note:', fbErr.message);
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch(e){}
+        window.recaptchaVerifier = null;
+      }
+    }
+
+    // 2. Also register session with Backend (for session backup & master dev bypass)
     try {
       const res = await api.post('/visitors/otp/send', { mobile: cleanMobile });
       setOtpSent(true);
       setOtpCode('');
       setCountdown(60);
-      setIsLiveDelivered(res.data?.delivered || false);
-      setDevOtp(res.data?.devOtp || '');
-      setCarrierNotice(res.data?.carrierNotice || '');
+      if (!sentViaFirebase) {
+        setIsLiveDelivered(res.data?.delivered || false);
+        setDevOtp(res.data?.devOtp || '');
+        setCarrierNotice(res.data?.carrierNotice || '');
+      } else {
+        setDevOtp(res.data?.devOtp || '');
+      }
       playAudioTone('checkin');
     } catch (err) {
-      setOtpError(messageFor(err));
-      playAudioTone('reject');
+      if (!sentViaFirebase) {
+        setOtpError(messageFor(err));
+        playAudioTone('reject');
+      } else {
+        setOtpSent(true);
+        setOtpCode('');
+        setCountdown(60);
+        playAudioTone('checkin');
+      }
     } finally {
       setOtpSending(false);
     }
@@ -2615,8 +2655,28 @@ function VisitorSelfRegister() {
     }
     setOtpVerifying(true);
     setOtpError('');
+
+    let fbVerified = false;
+
+    // 1. If Firebase confirmation is active, verify with Google Firebase
+    if (confirmationResult) {
+      try {
+        await confirmationResult.confirm(code);
+        fbVerified = true;
+      } catch (fbErr) {
+        console.warn('Firebase confirmation note, trying backend verification:', fbErr.message);
+      }
+    }
+
     try {
-      await api.post('/visitors/otp/verify', { mobile: cleanMobile, otp: code });
+      if (!fbVerified) {
+        // Verify with backend (supports session OTP and 123456 bypass)
+        await api.post('/visitors/otp/verify', { mobile: cleanMobile, otp: code });
+      } else {
+        // Inform backend so visitor record is marked verified
+        await api.post('/visitors/otp/verify', { mobile: cleanMobile, otp: code }).catch(() => {});
+      }
+
       setIsMobileVerified(true);
       setOtpSent(false);
       setOtpError('');
@@ -2866,6 +2926,7 @@ function VisitorSelfRegister() {
         {error && <div className="alert error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
         <form className="form-stack" onSubmit={handleSubmitPassRequest} noValidate>
+          <div id="recaptcha-container"></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
             <label>
               Full Name <span style={{ color: '#ef4444' }}>*</span>
