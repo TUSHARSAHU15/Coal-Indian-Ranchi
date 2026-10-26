@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Html5Qrcode } from 'html5-qrcode';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
-import { auth as firebaseAuth } from './firebase';
 import {
   Activity, ArrowRight, BarChart3, Building2, CheckCircle2, ChevronLeft,
   ClipboardCheck, DoorOpen, LogOut, Menu, ScanLine, ShieldCheck, Users,
@@ -2500,19 +2498,7 @@ function VisitorSelfRegister() {
     visitTime: '10:00 AM',
     expectedDuration: 2
   });
-  const [isMobileVerified, setIsMobileVerified] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [demoOtp, setDemoOtp] = useState('');
-  const [devOtp, setDevOtp] = useState('');
-  const [carrierNotice, setCarrierNotice] = useState('');
-  const [isLiveDelivered, setIsLiveDelivered] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
-  const [otpError, setOtpError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [countdown, setCountdown] = useState(0);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
@@ -2524,16 +2510,6 @@ function VisitorSelfRegister() {
       })
       .catch((e) => setError(messageFor(e)));
   }, []);
-
-  useEffect(() => {
-    let timer = null;
-    if (countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown((c) => (c > 0 ? c - 1 : 0));
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [countdown]);
 
   const clearFieldError = (key) => {
     if (fieldErrors[key]) {
@@ -2572,132 +2548,6 @@ function VisitorSelfRegister() {
     const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
     setForm((prev) => ({ ...prev, mobile: raw }));
     clearFieldError('mobile');
-    if (isMobileVerified) {
-      setIsMobileVerified(false);
-      setOtpSent(false);
-      setOtpCode('');
-      setOtpError('');
-      setConfirmationResult(null);
-    }
-  };
-
-  const handleSendOtp = async (overrideNumber) => {
-    const targetMobile = overrideNumber || form.mobile;
-    const cleanMobile = String(targetMobile || '').replace(/\D/g, '').slice(-10);
-    if (!cleanMobile || cleanMobile.length !== 10) {
-      setFieldErrors((prev) => ({ ...prev, mobile: 'Enter a valid 10-digit mobile number to receive OTP.' }));
-      playAudioTone('reject');
-      return;
-    }
-    setOtpSending(true);
-    setOtpError('');
-    setError('');
-
-    let sentViaFirebase = false;
-    let fbErrorMessage = '';
-
-    // 1. Send live carrier SMS via Google Firebase Phone Auth (100% Free)
-    try {
-      if (window.recaptchaVerifier) {
-        try { window.recaptchaVerifier.clear(); } catch(e){}
-        window.recaptchaVerifier = null;
-      }
-      const recaptchaEl = document.getElementById('recaptcha-container');
-      if (recaptchaEl) {
-        recaptchaEl.innerHTML = '';
-      }
-      window.recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
-        size: 'invisible',
-        callback: () => {}
-      });
-      await window.recaptchaVerifier.render();
-
-      const confirmation = await signInWithPhoneNumber(firebaseAuth, `+91${cleanMobile}`, window.recaptchaVerifier);
-      setConfirmationResult(confirmation);
-      sentViaFirebase = true;
-      setIsLiveDelivered(true);
-      setCarrierNotice('📲 Live carrier SMS dispatched by Google Firebase. Please check your SMS inbox.');
-    } catch (fbErr) {
-      fbErrorMessage = fbErr.message || 'Firebase initialization failed';
-      console.error('Firebase Phone Auth Error:', fbErr);
-      if (window.recaptchaVerifier) {
-        try { window.recaptchaVerifier.clear(); } catch(e){}
-        window.recaptchaVerifier = null;
-      }
-    }
-
-    // 2. Also register session with Backend (for session backup & master dev bypass)
-    try {
-      const res = await api.post('/visitors/otp/send', { mobile: cleanMobile });
-      setOtpSent(true);
-      setOtpCode('');
-      setCountdown(60);
-      if (!sentViaFirebase) {
-        setIsLiveDelivered(res.data?.delivered || false);
-        setDevOtp(res.data?.devOtp || '');
-        setCarrierNotice(fbErrorMessage ? `Firebase Gateway: ${fbErrorMessage}` : (res.data?.carrierNotice || ''));
-      } else {
-        setDevOtp(res.data?.devOtp || '');
-      }
-      playAudioTone('checkin');
-    } catch (err) {
-      if (!sentViaFirebase) {
-        setOtpError(messageFor(err));
-        playAudioTone('reject');
-      } else {
-        setOtpSent(true);
-        setOtpCode('');
-        setCountdown(60);
-        playAudioTone('checkin');
-      }
-    } finally {
-      setOtpSending(false);
-    }
-  };
-
-  const handleVerifyOtp = async (codeToVerify) => {
-    const cleanMobile = String(form.mobile || '').replace(/\D/g, '').slice(-10);
-    const code = String(codeToVerify || otpCode || '').trim();
-    if (!code || code.length !== 6) {
-      setOtpError('Please enter the 6-digit OTP verification code.');
-      playAudioTone('reject');
-      return;
-    }
-    setOtpVerifying(true);
-    setOtpError('');
-
-    let fbVerified = false;
-
-    // 1. If Firebase confirmation is active, verify with Google Firebase
-    if (confirmationResult) {
-      try {
-        await confirmationResult.confirm(code);
-        fbVerified = true;
-      } catch (fbErr) {
-        console.warn('Firebase confirmation note, trying backend verification:', fbErr.message);
-      }
-    }
-
-    try {
-      if (!fbVerified) {
-        // Verify with backend (supports session OTP and 123456 bypass)
-        await api.post('/visitors/otp/verify', { mobile: cleanMobile, otp: code });
-      } else {
-        // Inform backend so visitor record is marked verified
-        await api.post('/visitors/otp/verify', { mobile: cleanMobile, otp: code }).catch(() => {});
-      }
-
-      setIsMobileVerified(true);
-      setOtpSent(false);
-      setOtpError('');
-      clearFieldError('mobile');
-      playAudioTone('checkin');
-    } catch (err) {
-      setOtpError(messageFor(err));
-      playAudioTone('reject');
-    } finally {
-      setOtpVerifying(false);
-    }
   };
 
   const validateForm = () => {
@@ -2731,27 +2581,9 @@ function VisitorSelfRegister() {
   const handleSubmitPassRequest = async (e) => {
     e.preventDefault();
     setError('');
-    setOtpError('');
 
     const isValid = validateForm();
     if (!isValid) return;
-
-    if (!isMobileVerified) {
-      const cleanMobile = String(form.mobile || '').replace(/\D/g, '').slice(-10);
-      if (cleanMobile.length === 10) {
-        if (!otpSent) {
-          await handleSendOtp();
-        }
-        setError('Please enter the OTP verification code sent to your mobile before submitting.');
-        playAudioTone('reject');
-        return;
-      } else {
-        setFieldErrors((prev) => ({ ...prev, mobile: 'Valid 10-digit mobile number required.' }));
-        setError('Please provide a valid 10-digit mobile number.');
-        playAudioTone('reject');
-        return;
-      }
-    }
 
     setSubmitting(true);
     try {
@@ -2891,11 +2723,11 @@ function VisitorSelfRegister() {
           </div>
           <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>2</span>
-            <span>Verify mobile number using OTP</span>
+            <span>Submit pass request online</span>
           </div>
           <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>3</span>
-            <span>Host approves or rejects pass request</span>
+            <span>Host employee approves request</span>
           </div>
           <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
             <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>4</span>
@@ -2936,7 +2768,6 @@ function VisitorSelfRegister() {
         {error && <div className="alert error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
         <form className="form-stack" onSubmit={handleSubmitPassRequest} noValidate>
-          <div id="recaptcha-container"></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
             <label>
               Full Name <span style={{ color: '#ef4444' }}>*</span>
@@ -2953,226 +2784,22 @@ function VisitorSelfRegister() {
             <label>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Mobile Number <span style={{ color: '#ef4444' }}>*</span></span>
-                {isMobileVerified ? (
-                  <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    <CheckCircle2 size={13} /> Verified
-                  </span>
-                ) : (
-                  <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                    {form.mobile.length}/10 digits
-                  </span>
-                )}
+                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                  {form.mobile.length}/10 digits
+                </span>
               </div>
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                <input
-                  required
-                  type="tel"
-                  maxLength={10}
-                  value={form.mobile}
-                  disabled={isMobileVerified}
-                  onChange={handleMobileChange}
-                  placeholder="10-digit mobile"
-                  style={{
-                    flex: 1,
-                    borderColor: isMobileVerified ? '#22c55e' : fieldErrors.mobile ? '#ef4444' : undefined,
-                    background: isMobileVerified ? '#f0fdf4' : fieldErrors.mobile ? '#fff5f5' : undefined,
-                    fontWeight: isMobileVerified ? 700 : 400
-                  }}
-                />
-                {!isMobileVerified ? (
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    style={{
-                      whiteSpace: 'nowrap',
-                      padding: '0.4rem 0.75rem',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      background: form.mobile.length === 10 ? '#0d6975' : undefined,
-                      color: form.mobile.length === 10 ? '#ffffff' : undefined,
-                      border: form.mobile.length === 10 ? 'none' : undefined,
-                      cursor: form.mobile.length === 10 ? 'pointer' : 'not-allowed'
-                    }}
-                    disabled={otpSending || form.mobile.length !== 10}
-                    onClick={() => handleSendOtp()}
-                  >
-                    {otpSending ? 'Sending...' : otpSent ? 'Resend' : 'Send OTP'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#0d6975',
-                      textDecoration: 'underline',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: '0 4px'
-                    }}
-                    onClick={() => {
-                      setIsMobileVerified(false);
-                      setOtpSent(false);
-                      setOtpCode('');
-                    }}
-                  >
-                    Change
-                  </button>
-                )}
-              </div>
+              <input
+                required
+                type="tel"
+                maxLength={10}
+                value={form.mobile}
+                onChange={handleMobileChange}
+                placeholder="10-digit mobile"
+                style={fieldErrors.mobile ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+              />
               {fieldErrors.mobile && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.mobile}</span>}
             </label>
           </div>
-
-          {otpSent && !isMobileVerified && (
-            <div
-              style={{
-                background: '#f0fdf4',
-                border: '1.5px solid #86efac',
-                borderRadius: '10px',
-                padding: '1rem',
-                marginTop: '0.25rem',
-                marginBottom: '0.5rem',
-                boxShadow: '0 2px 8px rgba(34, 197, 94, 0.08)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <ShieldCheck size={18} style={{ color: '#16a34a' }} />
-                  <strong style={{ color: '#15803d', fontSize: '0.85rem' }}>
-                    Mobile Verification (OTP)
-                  </strong>
-                </div>
-                <span style={{ fontSize: '0.74rem', color: '#166534' }}>
-                  Sent to <strong>+91-{form.mobile}</strong>
-                </span>
-              </div>
-
-              {isLiveDelivered ? (
-                <div
-                  style={{
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: '6px',
-                    padding: '0.6rem 0.8rem',
-                    marginBottom: '0.75rem',
-                    fontSize: '0.78rem',
-                    color: '#15803d',
-                    lineHeight: 1.45
-                  }}
-                >
-                  📲 Live cellular SMS dispatched to your phone <strong>+91-{form.mobile}</strong>. Please check your SMS inbox and enter the 6-digit OTP below.
-                </div>
-              ) : (
-                <div
-                  style={{
-                    background: '#f8fafc',
-                    border: '1.5px solid #cbd5e1',
-                    borderRadius: '8px',
-                    padding: '0.75rem 0.9rem',
-                    marginBottom: '0.75rem',
-                    fontSize: '0.8rem',
-                    color: '#334155',
-                    lineHeight: 1.45
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div>
-                      {carrierNotice ? (
-                        <div style={{ fontSize: '0.72rem', color: '#b45309', marginBottom: '4px' }}>
-                          ℹ️ Carrier Note: {carrierNotice}
-                        </div>
-                      ) : null}
-                      <div style={{ fontSize: '0.82rem', color: '#0f172a' }}>
-                        Verification Code for <strong>+91-{form.mobile}</strong>: <strong style={{ fontSize: '1rem', letterSpacing: '2px', color: '#0d6975', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }}>{devOtp}</strong>
-                      </div>
-                    </div>
-                    {devOtp && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOtpCode(devOtp);
-                          handleVerifyOtp(devOtp);
-                        }}
-                        style={{
-                          background: '#0d6975',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          padding: '0.45rem 0.85rem',
-                          fontWeight: 700,
-                          fontSize: '0.78rem',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        ⚡ Auto-Fill {devOtp}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={otpCode}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setOtpCode(val);
-                    if (val.length === 6) {
-                      handleVerifyOtp(val);
-                    }
-                  }}
-                  placeholder="Enter 6-digit OTP"
-                  style={{
-                    flex: 1,
-                    height: '42px',
-                    fontSize: '1.25rem',
-                    letterSpacing: '0.25em',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    border: otpError ? '2px solid #ef4444' : '2px solid #22c55e',
-                    borderRadius: '6px',
-                    background: '#ffffff'
-                  }}
-                />
-                <button
-                  type="button"
-                  className="primary-button"
-                  style={{ height: '42px', padding: '0 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}
-                  disabled={otpVerifying || otpCode.length !== 6}
-                  onClick={() => handleVerifyOtp()}
-                >
-                  {otpVerifying ? 'Verifying...' : 'Verify OTP'}
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.72rem' }}>
-                {otpError ? (
-                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{otpError}</span>
-                ) : (
-                  <span style={{ color: '#64748b' }}>Enter the 6-digit code received on your phone</span>
-                )}
-                {countdown > 0 ? (
-                  <span style={{ color: '#64748b' }}>Resend in {countdown}s</span>
-                ) : (
-                  <button
-                    type="button"
-                    style={{ background: 'none', border: 'none', color: '#0d6975', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600, padding: 0 }}
-                    onClick={() => handleSendOtp()}
-                  >
-                    Resend Code
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
             <label>
