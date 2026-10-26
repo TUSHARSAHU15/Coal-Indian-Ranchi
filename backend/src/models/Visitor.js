@@ -25,6 +25,14 @@ const visitorSchema = new mongoose.Schema(
       trim: true,
       lowercase: true
     },
+    companyName: {
+      type: String,
+      trim: true
+    },
+    visitTime: {
+      type: String,
+      trim: true
+    },
 
     // Government ID
     govtIdType: {

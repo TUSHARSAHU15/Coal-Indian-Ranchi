@@ -28,6 +28,8 @@ const registerVisitor = async (data, req) => {
     fullName,
     mobile,
     email,
+    companyName,
+    visitTime,
     govtIdType,
     govtIdNumber,
     photoUrl,
@@ -54,7 +56,28 @@ const registerVisitor = async (data, req) => {
     });
 
     if (existingVisitor) {
-      throw new Error(`A visit registration already exists for this Government ID today (${existingVisitor.visitorId}).`);
+      if (existingVisitor.status === 'PENDING') {
+        // Update existing pending registration with latest visit details
+        if (fullName) existingVisitor.fullName = fullName;
+        if (mobile) existingVisitor.mobile = mobile;
+        if (email) existingVisitor.email = email;
+        if (companyName) existingVisitor.companyName = companyName;
+        if (visitTime) existingVisitor.visitTime = visitTime;
+        if (hostEmployeeId) existingVisitor.hostEmployeeId = hostEmployeeId;
+        if (departmentId) existingVisitor.departmentId = departmentId;
+        if (purpose) existingVisitor.purpose = purpose;
+        const updatedVisitor = await existingVisitor.save();
+        await logAudit({
+          action: 'VISITOR_REGISTRATION_UPDATED',
+          performedBy: req?.user?._id || null,
+          targetResource: 'VISITOR',
+          targetId: updatedVisitor._id,
+          details: { visitorId: updatedVisitor.visitorId, status: updatedVisitor.status },
+          ipAddress: req?.ip || '127.0.0.1'
+        });
+        return updatedVisitor;
+      }
+      throw new Error(`An approved pass already exists for this Government ID today (${existingVisitor.visitorId}). Please use Pass Lookup to view it.`);
     }
   }
 
@@ -76,6 +99,8 @@ const registerVisitor = async (data, req) => {
     fullName,
     mobile,
     email,
+    companyName,
+    visitTime,
     govtIdType,
     govtIdNumber: encryptedGovtId,
     govtIdHash,

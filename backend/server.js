@@ -97,12 +97,13 @@ app.use('/api/dashboard', dashboardRoutes);
 
 const { exportReport } = require('./src/controllers/VisitorController');
 const { getEmergencyRollCall } = require('./src/controllers/DashboardController');
+const { protect, authorize } = require('./src/middlewares/authMiddleware');
 const seedDatabase = require('./src/utils/seedData');
 
 app.get('/api/export-csv', exportReport);
 app.get('/api/v1/export-csv', exportReport);
-app.get('/api/emergency/rollcall', getEmergencyRollCall);
-app.get('/api/v1/emergency/rollcall', getEmergencyRollCall);
+app.get('/api/emergency/rollcall', protect, authorize('SUPER_ADMIN', 'ADMIN', 'SECURITY'), getEmergencyRollCall);
+app.get('/api/v1/emergency/rollcall', protect, authorize('SUPER_ADMIN', 'ADMIN', 'SECURITY'), getEmergencyRollCall);
 app.post('/api/seed', async (req, res, next) => {
   try {
     await seedDatabase();

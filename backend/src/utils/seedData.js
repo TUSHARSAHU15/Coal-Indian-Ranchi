@@ -70,6 +70,12 @@ const seedDatabase = async () => {
         password: passwordHash
       },
       {
+        employeeId: 'EMP-HOST',
+        role: 'EMPLOYEE',
+        departmentId: savedDepartments['HQ-RANCHI'],
+        password: passwordHash
+      },
+      {
         employeeId: 'EMP-HOST01',
         role: 'EMPLOYEE',
         departmentId: savedDepartments['HQ-RANCHI'],
@@ -93,16 +99,21 @@ const seedDatabase = async () => {
     }
 
     console.log('\nSeeding completed successfully!');
-    await mongoose.disconnect();
-    process.exit(0);
   } catch (error) {
     console.error('Seeding failed:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
 if (require.main === module) {
-  seedDatabase();
+  seedDatabase()
+    .then(async () => {
+      await mongoose.disconnect();
+      process.exit(0);
+    })
+    .catch((err) => {
+      process.exit(1);
+    });
 }
 
 module.exports = seedDatabase;

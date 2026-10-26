@@ -5,7 +5,7 @@ import {
   Activity, ArrowRight, BarChart3, Building2, CheckCircle2, ChevronLeft,
   ClipboardCheck, DoorOpen, LogOut, Menu, ScanLine, ShieldCheck, Users,
   UserPlus, XCircle, AlertTriangle, Printer, UserCheck, Clock, Radio, Download,
-  Camera, Trash2, Plus, Search
+  Camera, Trash2, Plus, Search, Lock, KeyRound
 } from 'lucide-react';
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -292,13 +292,13 @@ const playAudioTone = (type) => {
 };
 
 const roles = {
-  dashboard: ['SUPER_ADMIN', 'ADMIN', 'SECURITY'],
+  dashboard: ['SUPER_ADMIN', 'ADMIN'],
   visitors: ['SUPER_ADMIN', 'ADMIN'],
-  approvals: ['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'],
-  scanner: ['SUPER_ADMIN', 'ADMIN', 'SECURITY'],
-  history: ['SUPER_ADMIN', 'ADMIN', 'SECURITY'],
+  approvals: ['EMPLOYEE'],
+  scanner: ['SECURITY'],
   emergency: ['SUPER_ADMIN', 'ADMIN', 'SECURITY'],
-  admin: ['SUPER_ADMIN', 'ADMIN'],
+  departments: ['SUPER_ADMIN', 'ADMIN'],
+  lookup: ['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE'],
   all: ['SUPER_ADMIN', 'ADMIN', 'SECURITY', 'EMPLOYEE']
 };
 
@@ -424,17 +424,17 @@ function Shell({ auth }) {
     return () => socket.disconnect();
   }, []);
 
+  const lookupLabel = auth.user?.role === 'EMPLOYEE' ? 'Look Up Pass' : 'Pass Lookup';
+
   const navigation = [
     ['Dashboard', '/dashboard', BarChart3, roles.dashboard],
-    ['Visitors', '/visitors', Users, roles.visitors],
-    ['Approval inbox', '/approvals', ClipboardCheck, roles.approvals],
-    ['Gate scanner', '/scanner', ScanLine, roles.scanner],
-    ['Gate history', '/gate-history', Activity, roles.history],
-    ['Emergency roll call', '/emergency', AlertTriangle, roles.emergency],
-    ['Departments', '/departments', Building2, roles.admin],
-    ['Users', '/users', UserPlus, roles.admin],
-    ['Pass lookup', '/lookup', Search, roles.all]
-  ].filter(([, , , allowed]) => allowed.includes(auth.user?.role || 'SUPER_ADMIN'));
+    ['Register Visitor', '/visitors', UserPlus, roles.visitors],
+    ['Approve Pass', '/approvals', ClipboardCheck, roles.approvals],
+    ['Check-in / Check-out', '/scanner', ScanLine, roles.scanner],
+    ['Emergency Roll Call', '/emergency', AlertTriangle, roles.emergency],
+    ['Departments', '/departments', Building2, roles.departments],
+    [lookupLabel, '/lookup', Search, roles.lookup]
+  ].filter(([, , , allowed]) => allowed.includes(auth.user?.role || ''));
 
   return (
     <div className="app-shell">
@@ -538,7 +538,11 @@ function Login({ auth }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  if (auth.user) return <Navigate to="/dashboard" replace />;
+  if (auth.user) {
+    if (auth.user.role === 'EMPLOYEE') return <Navigate to="/approvals" replace />;
+    if (auth.user.role === 'SECURITY') return <Navigate to="/scanner" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const submit = async (event) => {
     event.preventDefault();
@@ -546,8 +550,14 @@ function Login({ auth }) {
     setError('');
     try {
       const result = mfa ? await auth.completeMfa(mfa, code) : await auth.login(employeeId, password);
-      if (result?.mfaRequired) setMfa(result.tempToken);
-      else navigate('/dashboard');
+      if (result?.mfaRequired) {
+        setMfa(result.tempToken);
+      } else {
+        const role = result?.user?.role;
+        if (role === 'EMPLOYEE') navigate('/approvals');
+        else if (role === 'SECURITY') navigate('/scanner');
+        else navigate('/dashboard');
+      }
     } catch (err) {
       setError(messageFor(err));
     } finally {
@@ -668,18 +678,27 @@ function Login({ auth }) {
             </button>
             <button
               type="button"
-              onClick={() => quickLogin('EMP-HOST01')}
+              onClick={() => quickLogin('EMP-HOST')}
               style={{ fontSize: '0.72rem', padding: '0.35rem 0.6rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}
             >
-              Host (EMP-HOST01)
+              Host (EMP-HOST)
             </button>
           </div>
         </div>
 
-        <div style={{ marginTop: '1.1rem', textAlign: 'center', fontSize: '0.78rem' }}>
-          <Link to="/lookup" style={{ color: '#0d6975', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Search size={14} /> Visitor Pass Self-Lookup / Kiosk &rarr;
-          </Link>
+        <div style={{ marginTop: '1.1rem', padding: '0.8rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Visiting CCL Premises?
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '0.45rem', flexWrap: 'wrap' }}>
+            <Link to="/register" style={{ color: '#0d6975', fontWeight: '700', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              <UserPlus size={14} /> Self-Register from Home &rarr;
+            </Link>
+            <span style={{ color: '#cbd5e1' }}>•</span>
+            <Link to="/lookup" style={{ color: '#082b3a', fontWeight: '600', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Search size={14} /> Track Pass Status &rarr;
+            </Link>
+          </div>
         </div>
 
         <div className="login-note">
@@ -1807,8 +1826,8 @@ function Approvals() {
 
   return (
     <>
-      <PageIntro eyebrow="Host actions" title="Approval inbox">
-        <span>Review visit requests awaiting employee or administrator approval.</span>
+      <PageIntro eyebrow="Host actions" title="Approve Visitor Passes">
+        <span>Review visitor requests registered from home or mobile. Visitors cannot enter premises until host approval is granted.</span>
       </PageIntro>
       {error && <div className="alert error">{error}</div>}
       <section className="panel table-panel">
@@ -1816,9 +1835,11 @@ function Approvals() {
           <table>
             <thead>
               <tr>
-                <th>Visitor</th>
+                <th>Visitor Details</th>
+                <th>Company / Org</th>
+                <th>Department</th>
                 <th>Purpose</th>
-                <th>Visit date</th>
+                <th>Visit Schedule</th>
                 <th>Host</th>
                 <th />
               </tr>
@@ -1828,23 +1849,43 @@ function Approvals() {
                 <tr key={item._id}>
                   <td>
                     <strong>{item.fullName}</strong>
-                    <small>{item.mobile}</small>
+                    <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{item.mobile}</div>
+                    {item.email && <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{item.email}</div>}
                   </td>
-                  <td>{item.purpose}</td>
-                  <td>{formatDate(item.visitDate)}</td>
-                  <td>{item.hostEmployeeId?.employeeId || '-'}</td>
+                  <td>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: item.companyName ? '#0f172a' : '#94a3b8' }}>
+                      {item.companyName || 'Independent'}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ fontSize: '0.78rem' }}>{item.departmentId?.name || '-'}</span>
+                  </td>
+                  <td style={{ maxWidth: '180px', fontSize: '0.8rem' }}>{item.purpose}</td>
+                  <td>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 600 }}>{formatDate(item.visitDate)}</div>
+                    {item.visitTime && (
+                      <span style={{ fontSize: '0.72rem', color: '#0d6975', fontWeight: 700 }}>
+                        {item.visitTime}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="badge" style={{ fontSize: '0.74rem', background: '#e0f2fe', color: '#0369a1', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                      {item.hostEmployeeId?.employeeId || '-'}
+                    </span>
+                  </td>
                   <td>
                     <div className="action-row">
                       <input
                         placeholder="Remark (optional)"
                         value={remarks[item._id] || ''}
                         onChange={(e) => setRemarks({ ...remarks, [item._id]: e.target.value })}
-                        style={{ fontSize: '0.72rem', padding: '0.35rem 0.5rem', width: '130px' }}
+                        style={{ fontSize: '0.72rem', padding: '0.35rem 0.5rem', width: '120px' }}
                       />
-                      <button className="approve-button" onClick={() => decide(item._id, 'APPROVED')}>
+                      <button className="approve-button" onClick={() => decide(item._id, 'APPROVED')} title="Authorize gate pass">
                         <CheckCircle2 size={15} /> Approve
                       </button>
-                      <button className="reject-button" onClick={() => decide(item._id, 'REJECTED')}>
+                      <button className="reject-button" onClick={() => decide(item._id, 'REJECTED')} title="Decline request">
                         <XCircle size={15} /> Reject
                       </button>
                     </div>
@@ -2438,6 +2479,781 @@ function Directory({ type }) {
   );
 }
 
+function VisitorSelfRegister() {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [form, setForm] = useState({
+    fullName: '',
+    mobile: '',
+    email: '',
+    companyName: '',
+    govtIdType: 'Aadhaar Card',
+    govtIdNumber: '',
+    hostEmployeeId: '',
+    departmentId: '',
+    purpose: '',
+    visitDate: getLocalDateTimeString().slice(0, 10),
+    visitTime: '10:00 AM',
+    expectedDuration: 2
+  });
+  const [isMobileVerified, setIsMobileVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [demoOtp, setDemoOtp] = useState('');
+  const [devOtp, setDevOtp] = useState('');
+  const [carrierNotice, setCarrierNotice] = useState('');
+  const [isLiveDelivered, setIsLiveDelivered] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    Promise.all([api.get('/users'), api.get('/departments')])
+      .then(([u, d]) => {
+        setUsers(unwrap(u) || []);
+        setDepartments(unwrap(d) || []);
+      })
+      .catch((e) => setError(messageFor(e)));
+  }, []);
+
+  useEffect(() => {
+    let timer = null;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((c) => (c > 0 ? c - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  const clearFieldError = (key) => {
+    if (fieldErrors[key]) {
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+    }
+  };
+
+  const update = (key) => (e) => {
+    setForm({ ...form, [key]: e.target.value });
+    clearFieldError(key);
+  };
+
+  const handleGovtIdTypeChange = (e) => {
+    const newType = e.target.value;
+    const cfg = GOVT_ID_CONFIG[newType] || GOVT_ID_CONFIG['Aadhaar Card'];
+    setForm((prev) => ({
+      ...prev,
+      govtIdType: newType,
+      govtIdNumber: cfg.sanitize(prev.govtIdNumber || '')
+    }));
+    clearFieldError('govtIdNumber');
+  };
+
+  const handleGovtIdNumberChange = (e) => {
+    const cfg = GOVT_ID_CONFIG[form.govtIdType] || GOVT_ID_CONFIG['Aadhaar Card'];
+    const sanitized = cfg.sanitize(e.target.value);
+    setForm((prev) => ({ ...prev, govtIdNumber: sanitized }));
+    clearFieldError('govtIdNumber');
+  };
+
+  const handleMobileChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setForm((prev) => ({ ...prev, mobile: raw }));
+    clearFieldError('mobile');
+    if (isMobileVerified) {
+      setIsMobileVerified(false);
+      setOtpSent(false);
+      setOtpCode('');
+      setOtpError('');
+    }
+  };
+
+  const handleSendOtp = async (overrideNumber) => {
+    const targetMobile = overrideNumber || form.mobile;
+    const cleanMobile = String(targetMobile || '').replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      setFieldErrors((prev) => ({ ...prev, mobile: 'Enter a valid 10-digit mobile number to receive OTP.' }));
+      playAudioTone('reject');
+      return;
+    }
+    setOtpSending(true);
+    setOtpError('');
+    setError('');
+    try {
+      const res = await api.post('/visitors/otp/send', { mobile: cleanMobile });
+      setOtpSent(true);
+      setOtpCode('');
+      setCountdown(60);
+      setIsLiveDelivered(res.data?.delivered || false);
+      setDevOtp(res.data?.devOtp || '');
+      setCarrierNotice(res.data?.carrierNotice || '');
+      playAudioTone('checkin');
+    } catch (err) {
+      setOtpError(messageFor(err));
+      playAudioTone('reject');
+    } finally {
+      setOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async (codeToVerify) => {
+    const cleanMobile = String(form.mobile || '').replace(/\D/g, '').slice(-10);
+    const code = String(codeToVerify || otpCode || '').trim();
+    if (!code || code.length !== 6) {
+      setOtpError('Please enter the 6-digit OTP verification code.');
+      playAudioTone('reject');
+      return;
+    }
+    setOtpVerifying(true);
+    setOtpError('');
+    try {
+      await api.post('/visitors/otp/verify', { mobile: cleanMobile, otp: code });
+      setIsMobileVerified(true);
+      setOtpSent(false);
+      setOtpError('');
+      clearFieldError('mobile');
+      playAudioTone('checkin');
+    } catch (err) {
+      setOtpError(messageFor(err));
+      playAudioTone('reject');
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!form.fullName || !form.fullName.trim()) errors.fullName = 'Full name is required.';
+    const cleanMobile = form.mobile ? form.mobile.replace(/\D/g, '').slice(-10) : '';
+    if (!cleanMobile || cleanMobile.length !== 10) errors.mobile = 'Valid 10-digit mobile number required.';
+    if (!form.email || !form.email.includes('@')) errors.email = 'Valid email address required.';
+    const cfg = GOVT_ID_CONFIG[form.govtIdType] || GOVT_ID_CONFIG['Aadhaar Card'];
+    if (!form.govtIdNumber || !form.govtIdNumber.trim()) {
+      errors.govtIdNumber = `${form.govtIdType} number is required.`;
+    } else if (!cfg.isValid(form.govtIdNumber.trim())) {
+      errors.govtIdNumber = cfg.errorMsg;
+    }
+    if (!form.hostEmployeeId) errors.hostEmployeeId = 'Please select the person you are visiting.';
+    if (!form.departmentId) errors.departmentId = 'Please select the department.';
+    if (!form.purpose || !form.purpose.trim()) errors.purpose = 'Purpose of visit is required.';
+    if (!form.visitDate) errors.visitDate = 'Visit date is required.';
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setError('Please resolve the highlighted fields before submitting.');
+      playAudioTone('reject');
+      return false;
+    }
+    setFieldErrors({});
+    setError('');
+    return true;
+  };
+
+  const handleSubmitPassRequest = async (e) => {
+    e.preventDefault();
+    setError('');
+    setOtpError('');
+
+    const isValid = validateForm();
+    if (!isValid) return;
+
+    if (!isMobileVerified) {
+      const cleanMobile = String(form.mobile || '').replace(/\D/g, '').slice(-10);
+      if (cleanMobile.length === 10) {
+        if (!otpSent) {
+          await handleSendOtp();
+        }
+        setError('Please enter the OTP verification code sent to your mobile before submitting.');
+        playAudioTone('reject');
+        return;
+      } else {
+        setFieldErrors((prev) => ({ ...prev, mobile: 'Valid 10-digit mobile number required.' }));
+        setError('Please provide a valid 10-digit mobile number.');
+        playAudioTone('reject');
+        return;
+      }
+    }
+
+    setSubmitting(true);
+    try {
+      const submitPayload = {
+        ...form,
+        expectedDuration: Number(form.expectedDuration || 2),
+        status: 'PENDING'
+      };
+      const response = await api.post('/visitors', submitPayload);
+      playAudioTone('checkin');
+      setResult(unwrap(response));
+    } catch (err) {
+      playAudioTone('reject');
+      setError(messageFor(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (result) {
+    const selectedHost = users.find((u) => u._id === form.hostEmployeeId)?.employeeId || 'Host Employee';
+    const selectedDept = departments.find((d) => d._id === form.departmentId)?.name || 'Department';
+
+    return (
+      <div className="login-page">
+        <div className="login-visual">
+          <div className="login-kicker">CCL / PASS REQUEST SUBMITTED</div>
+          <h1>
+            Registration
+            <br />
+            <em>submitted.</em>
+          </h1>
+          <p>Your visit request has been registered and forwarded to your host for approval.</p>
+          <div className="login-rule" />
+        </div>
+
+        <div className="login-panel">
+          <div className="brand">
+            <img
+              src="/ccl_security_emblem.jpg"
+              alt="CCL"
+              style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #e2b34a' }}
+            />
+            <div>
+              <strong>DVMS</strong>
+              <span>Digital Visitor Pass Request</span>
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '1.25rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
+            <CheckCircle2 size={42} style={{ color: '#10b981', margin: '0 auto 0.4rem' }} />
+            <span className="eyebrow" style={{ color: '#0d6975', letterSpacing: '1px' }}>Request ID Generated</span>
+            <h2 style={{ margin: '0.2rem 0', color: '#0f172a' }}>{result.fullName}</h2>
+            <div style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0d6975', letterSpacing: '0.05em', margin: '0.3rem 0' }}>
+              {result.visitorId}
+            </div>
+
+            <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '8px', padding: '0.85rem', margin: '1rem 0', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#92400e', fontWeight: '800', fontSize: '0.85rem' }}>
+                <Clock size={16} /> Status: PENDING HOST APPROVAL
+              </div>
+              <p style={{ color: '#78350f', fontSize: '0.78rem', margin: '0.4rem 0 0', lineHeight: 1.5 }}>
+                <strong>Important Policy Notice:</strong> A visitor who registers from home does not automatically receive entry permission. Your digital entry badge and QR code will become active <strong>only after host approval</strong> from <strong>{selectedHost}</strong>.
+              </p>
+            </div>
+
+            <div className="detail-list" style={{ fontSize: '0.8rem', textAlign: 'left', marginBottom: '1rem' }}>
+              <div><span>Host Person</span><strong>{selectedHost}</strong></div>
+              <div><span>Department</span><strong>{selectedDept}</strong></div>
+              <div><span>Visit Schedule</span><strong>{form.visitDate} ({form.visitTime})</strong></div>
+              {form.companyName && <div><span>Company</span><strong>{form.companyName}</strong></div>}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="primary-button"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => navigate(`/lookup?query=${result.visitorId}`)}
+              >
+                <Search size={16} /> Track Pass Status &rarr;
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => {
+                  setResult(null);
+                  setForm({
+                    fullName: '',
+                    mobile: '',
+                    email: '',
+                    companyName: '',
+                    govtIdType: 'Aadhaar Card',
+                    govtIdNumber: '',
+                    hostEmployeeId: '',
+                    departmentId: '',
+                    purpose: '',
+                    visitDate: getLocalDateTimeString().slice(0, 10),
+                    visitTime: '10:00 AM',
+                    expectedDuration: 2
+                  });
+                }}
+              >
+                Register Another Visitor
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8rem' }}>
+            <Link to="/login" style={{ color: '#0d6975', fontWeight: '600' }}>
+              &larr; Back to Employee Sign in
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentIdConfig = GOVT_ID_CONFIG[form.govtIdType] || GOVT_ID_CONFIG['Aadhaar Card'];
+
+  return (
+    <div className="login-page">
+      <div className="login-visual">
+        <div className="login-kicker">CCL / VISITOR SELF-REGISTRATION</div>
+        <h1>
+          Self-register
+          <br />
+          <em>from home.</em>
+        </h1>
+        <p>Apply for official Central Coalfields Limited digital entry authorization online.</p>
+
+        <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>1</span>
+            <span>Fill your personal and visit details</span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>2</span>
+            <span>Verify mobile number using OTP</span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>3</span>
+            <span>Host approves or rejects pass request</span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>4</span>
+            <span>Active digital QR pass issued upon approval</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.8rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', padding: '0.35rem 0.65rem', borderRadius: '4px', color: '#e2b34a', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <ShieldCheck size={13} /> DPDP Act 2023 Compliant
+          </span>
+          <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', padding: '0.35rem 0.65rem', borderRadius: '4px', color: '#a7f3d0', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+            <KeyRound size={13} /> Pre-Approval Required
+          </span>
+        </div>
+        <div className="login-rule" />
+      </div>
+
+      <div className="login-panel" style={{ maxWidth: '520px' }}>
+        <div className="brand">
+          <img
+            src="/ccl_security_emblem.jpg"
+            alt="CCL Emblem"
+            style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #e2b34a' }}
+          />
+          <div>
+            <strong>DVMS</strong>
+            <span>Visitor Self-Registration Portal</span>
+          </div>
+        </div>
+
+        <div className="login-copy">
+          <span className="eyebrow">Online visitor application</span>
+          <h2>Request Entry Pass</h2>
+          <p>Fill in your details below to request a visitor pass from home or mobile.</p>
+        </div>
+
+        {error && <div className="alert error" style={{ marginBottom: '1rem' }}>{error}</div>}
+
+        <form className="form-stack" onSubmit={handleSubmitPassRequest} noValidate>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            <label>
+              Full Name <span style={{ color: '#ef4444' }}>*</span>
+              <input
+                required
+                value={form.fullName}
+                onChange={update('fullName')}
+                placeholder="e.g. Rajesh Kumar"
+                style={fieldErrors.fullName ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+              />
+              {fieldErrors.fullName && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.fullName}</span>}
+            </label>
+
+            <label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Mobile Number <span style={{ color: '#ef4444' }}>*</span></span>
+                {isMobileVerified ? (
+                  <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    <CheckCircle2 size={13} /> Verified
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                    {form.mobile.length}/10 digits
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                <input
+                  required
+                  type="tel"
+                  maxLength={10}
+                  value={form.mobile}
+                  disabled={isMobileVerified}
+                  onChange={handleMobileChange}
+                  placeholder="10-digit mobile"
+                  style={{
+                    flex: 1,
+                    borderColor: isMobileVerified ? '#22c55e' : fieldErrors.mobile ? '#ef4444' : undefined,
+                    background: isMobileVerified ? '#f0fdf4' : fieldErrors.mobile ? '#fff5f5' : undefined,
+                    fontWeight: isMobileVerified ? 700 : 400
+                  }}
+                />
+                {!isMobileVerified ? (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{
+                      whiteSpace: 'nowrap',
+                      padding: '0.4rem 0.75rem',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      background: form.mobile.length === 10 ? '#0d6975' : undefined,
+                      color: form.mobile.length === 10 ? '#ffffff' : undefined,
+                      border: form.mobile.length === 10 ? 'none' : undefined,
+                      cursor: form.mobile.length === 10 ? 'pointer' : 'not-allowed'
+                    }}
+                    disabled={otpSending || form.mobile.length !== 10}
+                    onClick={() => handleSendOtp()}
+                  >
+                    {otpSending ? 'Sending...' : otpSent ? 'Resend' : 'Send OTP'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#0d6975',
+                      textDecoration: 'underline',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: '0 4px'
+                    }}
+                    onClick={() => {
+                      setIsMobileVerified(false);
+                      setOtpSent(false);
+                      setOtpCode('');
+                    }}
+                  >
+                    Change
+                  </button>
+                )}
+              </div>
+              {fieldErrors.mobile && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.mobile}</span>}
+            </label>
+          </div>
+
+          {otpSent && !isMobileVerified && (
+            <div
+              style={{
+                background: '#f0fdf4',
+                border: '1.5px solid #86efac',
+                borderRadius: '10px',
+                padding: '1rem',
+                marginTop: '0.25rem',
+                marginBottom: '0.5rem',
+                boxShadow: '0 2px 8px rgba(34, 197, 94, 0.08)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <ShieldCheck size={18} style={{ color: '#16a34a' }} />
+                  <strong style={{ color: '#15803d', fontSize: '0.85rem' }}>
+                    Mobile Verification (OTP)
+                  </strong>
+                </div>
+                <span style={{ fontSize: '0.74rem', color: '#166534' }}>
+                  Sent to <strong>+91-{form.mobile}</strong>
+                </span>
+              </div>
+
+              {isLiveDelivered ? (
+                <div
+                  style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '6px',
+                    padding: '0.6rem 0.8rem',
+                    marginBottom: '0.75rem',
+                    fontSize: '0.78rem',
+                    color: '#15803d',
+                    lineHeight: 1.45
+                  }}
+                >
+                  📲 Live cellular SMS dispatched to your phone <strong>+91-{form.mobile}</strong>. Please check your SMS inbox and enter the 6-digit OTP below.
+                </div>
+              ) : (
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '8px',
+                    padding: '0.75rem 0.9rem',
+                    marginBottom: '0.75rem',
+                    fontSize: '0.8rem',
+                    color: '#334155',
+                    lineHeight: 1.45
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      {carrierNotice ? (
+                        <div style={{ fontSize: '0.72rem', color: '#b45309', marginBottom: '4px' }}>
+                          ℹ️ Carrier Note: {carrierNotice}
+                        </div>
+                      ) : null}
+                      <div style={{ fontSize: '0.82rem', color: '#0f172a' }}>
+                        Verification Code for <strong>+91-{form.mobile}</strong>: <strong style={{ fontSize: '1rem', letterSpacing: '2px', color: '#0d6975', background: '#e0f2fe', padding: '2px 8px', borderRadius: '4px' }}>{devOtp}</strong>
+                      </div>
+                    </div>
+                    {devOtp && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOtpCode(devOtp);
+                          handleVerifyOtp(devOtp);
+                        }}
+                        style={{
+                          background: '#0d6975',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '0.45rem 0.85rem',
+                          fontWeight: 700,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        ⚡ Auto-Fill {devOtp}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtpCode(val);
+                    if (val.length === 6) {
+                      handleVerifyOtp(val);
+                    }
+                  }}
+                  placeholder="Enter 6-digit OTP"
+                  style={{
+                    flex: 1,
+                    height: '42px',
+                    fontSize: '1.25rem',
+                    letterSpacing: '0.25em',
+                    textAlign: 'center',
+                    fontWeight: 'bold',
+                    border: otpError ? '2px solid #ef4444' : '2px solid #22c55e',
+                    borderRadius: '6px',
+                    background: '#ffffff'
+                  }}
+                />
+                <button
+                  type="button"
+                  className="primary-button"
+                  style={{ height: '42px', padding: '0 1rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                  disabled={otpVerifying || otpCode.length !== 6}
+                  onClick={() => handleVerifyOtp()}
+                >
+                  {otpVerifying ? 'Verifying...' : 'Verify OTP'}
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', fontSize: '0.72rem' }}>
+                {otpError ? (
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{otpError}</span>
+                ) : (
+                  <span style={{ color: '#64748b' }}>Enter the 6-digit code received on your phone</span>
+                )}
+                {countdown > 0 ? (
+                  <span style={{ color: '#64748b' }}>Resend in {countdown}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    style={{ background: 'none', border: 'none', color: '#0d6975', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600, padding: 0 }}
+                    onClick={() => handleSendOtp()}
+                  >
+                    Resend Code
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            <label>
+              Email Address <span style={{ color: '#ef4444' }}>*</span>
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={update('email')}
+                placeholder="name@example.com"
+                style={fieldErrors.email ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+              />
+              {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.email}</span>}
+            </label>
+
+            <label>
+              Company / Organization <small style={{ color: '#64748b' }}>(optional)</small>
+              <input
+                value={form.companyName}
+                onChange={update('companyName')}
+                placeholder="e.g. Tata Projects, Vendor"
+              />
+            </label>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            <label>
+              Department to Visit <span style={{ color: '#ef4444' }}>*</span>
+              <select
+                required
+                value={form.departmentId}
+                onChange={update('departmentId')}
+                style={fieldErrors.departmentId ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+              >
+                <option value="">Select department</option>
+                {departments.map((d) => (
+                  <option key={d._id} value={d._id}>
+                    {d.name} ({d.code})
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.departmentId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.departmentId}</span>}
+            </label>
+
+            <label>
+              Person to Visit (Host) <span style={{ color: '#ef4444' }}>*</span>
+              <select
+                required
+                value={form.hostEmployeeId}
+                onChange={update('hostEmployeeId')}
+                style={fieldErrors.hostEmployeeId ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+              >
+                <option value="">Select host employee</option>
+                {users.filter(u => u.role === 'EMPLOYEE' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN').map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.employeeId} ({u.role})
+                  </option>
+                ))}
+              </select>
+              {fieldErrors.hostEmployeeId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.hostEmployeeId}</span>}
+            </label>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            <label>
+              Preferred Visit Date <span style={{ color: '#ef4444' }}>*</span>
+              <input
+                required
+                type="date"
+                value={form.visitDate}
+                onChange={update('visitDate')}
+                style={fieldErrors.visitDate ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+              />
+              {fieldErrors.visitDate && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.visitDate}</span>}
+            </label>
+
+            <label>
+              Preferred Arrival Time
+              <select value={form.visitTime} onChange={update('visitTime')}>
+                <option value="09:00 AM">09:00 AM - Morning Slot 1</option>
+                <option value="10:00 AM">10:00 AM - Morning Slot 2</option>
+                <option value="11:30 AM">11:30 AM - Late Morning</option>
+                <option value="02:00 PM">02:00 PM - Afternoon Slot 1</option>
+                <option value="03:30 PM">03:30 PM - Afternoon Slot 2</option>
+                <option value="05:00 PM">05:00 PM - Evening Slot</option>
+              </select>
+            </label>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+            <label>
+              ID Type <span style={{ color: '#ef4444' }}>*</span>
+              <select value={form.govtIdType} onChange={handleGovtIdTypeChange}>
+                {Object.keys(GOVT_ID_CONFIG).map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              {form.govtIdType} Number <span style={{ color: '#ef4444' }}>*</span>
+              <input
+                required
+                value={form.govtIdNumber}
+                onChange={handleGovtIdNumberChange}
+                placeholder={currentIdConfig.placeholder}
+                maxLength={currentIdConfig.limit}
+                style={fieldErrors.govtIdNumber ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+              />
+              {fieldErrors.govtIdNumber ? (
+                <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.govtIdNumber}</span>
+              ) : (
+                <span style={{ color: '#64748b', fontSize: '0.7rem' }}>{currentIdConfig.hint}</span>
+              )}
+            </label>
+          </div>
+
+          <label>
+            Purpose of Visit <span style={{ color: '#ef4444' }}>*</span>
+            <input
+              required
+              value={form.purpose}
+              onChange={update('purpose')}
+              placeholder="e.g. Official vendor meeting, equipment delivery inspection"
+              style={fieldErrors.purpose ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            />
+            {fieldErrors.purpose && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.purpose}</span>}
+          </label>
+
+          <button
+            type="submit"
+            className="primary-button"
+            disabled={submitting}
+            style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center' }}
+          >
+            {submitting ? 'Submitting Pass Request...' : 'Submit Pass Request'} <ArrowRight size={17} />
+          </button>
+        </form>
+
+        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <Link to="/lookup" style={{ color: '#0d6975', fontWeight: '600' }}>
+            Already registered? Track pass status &rarr;
+          </Link>
+          <Link to="/login" style={{ color: '#64748b' }}>
+            Employee Sign In
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VisitorLookup() {
   const [query, setQuery] = useState('');
   const [result, setResult] = useState(null);
@@ -2582,52 +3398,89 @@ function VisitorLookup() {
               <Status value={result.visitor?.status} />
             </div>
 
-            <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-              {result.visitor?.photoUrl && (
-                <img
-                  src={result.visitor?.photoUrl}
-                  alt={result.visitor?.fullName}
-                  style={{
-                    width: '85px',
-                    height: '85px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    margin: '0 auto 0.8rem',
-                    border: '2px solid #0d6975'
-                  }}
-                />
-              )}
-              {result.qrDataUri && (
-                <img src={result.qrDataUri} alt="Visitor QR" style={{ width: '180px', height: '180px', margin: '0 auto' }} />
-              )}
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold', letterSpacing: '0.1em', marginTop: '0.5rem', color: '#0f172a' }}>
-                {result.visitor?.passCode}
+            {result.visitor?.status === 'PENDING' ? (
+              <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '10px', padding: '1.25rem', margin: '1rem 0', textAlign: 'center' }}>
+                <Clock size={36} style={{ color: '#d97706', margin: '0 auto 0.5rem' }} />
+                <h4 style={{ color: '#92400e', margin: '0 0 0.35rem', fontSize: '1.05rem', fontWeight: '700' }}>
+                  Pass Pending Host Approval
+                </h4>
+                <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: '6px', padding: '0.65rem 0.8rem', color: '#78350f', fontSize: '0.8rem', lineHeight: 1.5, margin: '0.6rem 0' }}>
+                  <strong>Important Security Notice:</strong> This pass was requested from home and is <strong>NOT yet valid for entry</strong>. Entry permission and your official digital QR badge will unlock once your host (<strong>{result.visitor?.host || 'Host Employee'}</strong>) reviews and approves your request.
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#b45309', fontWeight: '600' }}>
+                  Registration ID: <strong>{result.visitor?.visitorId}</strong>
+                </div>
               </div>
-              <small style={{ color: '#64748b' }}>6-Digit Gate Code</small>
-            </div>
+            ) : result.visitor?.status === 'REJECTED' ? (
+              <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '10px', padding: '1.25rem', margin: '1rem 0', textAlign: 'center' }}>
+                <XCircle size={36} style={{ color: '#dc2626', margin: '0 auto 0.5rem' }} />
+                <h4 style={{ color: '#991b1b', margin: '0 0 0.35rem', fontSize: '1.05rem', fontWeight: '700' }}>
+                  Pass Request Declined
+                </h4>
+                <p style={{ color: '#7f1d1d', fontSize: '0.82rem', margin: '0.4rem 0 0' }}>
+                  Your visit request was declined by host <strong>{result.visitor?.host || 'Host Employee'}</strong>. Entry to CCL facilities will not be authorized at security gates.
+                </p>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', margin: '1rem 0' }}>
+                {result.visitor?.photoUrl && (
+                  <img
+                    src={result.visitor?.photoUrl}
+                    alt={result.visitor?.fullName}
+                    style={{
+                      width: '85px',
+                      height: '85px',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      margin: '0 auto 0.8rem',
+                      border: '2px solid #0d6975'
+                    }}
+                  />
+                )}
+                {result.qrDataUri && (
+                  <img src={result.qrDataUri} alt="Visitor QR" style={{ width: '180px', height: '180px', margin: '0 auto' }} />
+                )}
+                <div style={{ fontSize: '1.4rem', fontWeight: 'bold', letterSpacing: '0.1em', marginTop: '0.5rem', color: '#0f172a' }}>
+                  {result.visitor?.passCode}
+                </div>
+                <small style={{ color: '#15803d', fontWeight: '700' }}>Official Gate Pass (Approved & Active)</small>
+              </div>
+            )}
 
             <div className="detail-list" style={{ fontSize: '0.8rem' }}>
               <div><span>Host</span><strong>{result.visitor?.host || '-'}</strong></div>
               <div><span>Department</span><strong>{result.visitor?.department || '-'}</strong></div>
-              <div><span>Visit Date</span><strong>{formatDate(result.visitor?.visitDate)}</strong></div>
-              <div><span>Current State</span><strong>{result.visitor?.visitState}</strong></div>
-              <div><span>Valid Until</span><strong>{formatDate(result.visitor?.expiresAt)}</strong></div>
+              {result.visitor?.companyName && <div><span>Company</span><strong>{result.visitor.companyName}</strong></div>}
+              {result.visitor?.purpose && <div><span>Purpose</span><strong>{result.visitor.purpose}</strong></div>}
+              <div><span>Visit Date</span><strong>{formatDate(result.visitor?.visitDate)} {result.visitor?.visitTime ? `(${result.visitor.visitTime})` : ''}</strong></div>
+              <div><span>Status</span><Status value={result.visitor?.status} /></div>
+              {result.visitor?.status === 'APPROVED' && <div><span>Valid Until</span><strong>{formatDate(result.visitor?.expiresAt)}</strong></div>}
             </div>
 
-            <button
-              type="button"
-              className="primary-button no-print"
-              style={{ width: '100%', marginTop: '1rem', justifyContent: 'center' }}
-              onClick={() => triggerPrintBadge('printable-pass')}
-            >
-              <Printer size={16} /> 1-Click Print Badge
-            </button>
+            {result.visitor?.status === 'APPROVED' ? (
+              <button
+                type="button"
+                className="primary-button no-print"
+                style={{ width: '100%', marginTop: '1rem', justifyContent: 'center' }}
+                onClick={() => triggerPrintBadge('printable-pass')}
+              >
+                <Printer size={16} /> 1-Click Print Badge
+              </button>
+            ) : (
+              <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.78rem', color: '#64748b' }}>
+                <Lock size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                Badge printing unlocked upon host approval
+              </div>
+            )}
           </div>
         )}
 
-        <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
           <Link to="/login" style={{ color: '#0d6975', fontWeight: '600' }}>
             &larr; Back to Employee Sign in
+          </Link>
+          <Link to="/register" style={{ color: '#0d6975', fontWeight: '700' }}>
+            Self-Register from Home &rarr;
           </Link>
         </div>
       </div>
@@ -2641,8 +3494,8 @@ function Unauthorized() {
       <ShieldCheck size={38} />
       <h2>Access restricted</h2>
       <p>Your role is not authorized for this workspace.</p>
-      <Link className="primary-button" to="/dashboard">
-        Return to dashboard
+      <Link className="primary-button" to="/">
+        Return to authorized area
       </Link>
     </div>
   );
@@ -2665,7 +3518,7 @@ function Profile({ auth }) {
         </div>
         <div>
           <span>User ID</span>
-          <strong>{auth.user?.id}</strong>
+          <strong>{auth.user?.id || auth.user?._id}</strong>
         </div>
       </section>
     </>
@@ -2673,7 +3526,18 @@ function Profile({ auth }) {
 }
 
 function RoleHome({ auth }) {
-  return <Navigate to={auth.user?.role === 'EMPLOYEE' ? '/approvals' : '/dashboard'} replace />;
+  const role = auth.user?.role;
+  if (role === 'EMPLOYEE') return <Navigate to="/approvals" replace />;
+  if (role === 'SECURITY') return <Navigate to="/scanner" replace />;
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/login" replace />;
+}
+
+function Guard({ auth, allowed, children }) {
+  if (auth.loading) return <div className="loading-screen">Loading secure workspace...</div>;
+  if (!auth.user) return <Navigate to="/login" replace />;
+  if (allowed && !allowed.includes(auth.user.role)) return <Navigate to="/unauthorized" replace />;
+  return children;
 }
 
 export default function App() {
@@ -2682,30 +3546,31 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login auth={auth} />} />
+        <Route path="/register" element={<VisitorSelfRegister />} />
+        <Route path="/self-register" element={<VisitorSelfRegister />} />
+        <Route path="/apply" element={<VisitorSelfRegister />} />
         <Route path="/lookup" element={<VisitorLookup />} />
         <Route path="/kiosk" element={<VisitorLookup />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Main Authenticated Layout with Original Sidebar & Topbar */}
+        {/* Main Authenticated Layout with Role-Based Guarded Routes */}
         <Route element={<Protected auth={auth} />}>
           <Route index element={<RoleHome auth={auth} />} />
           <Route path="profile" element={<Profile auth={auth} />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="visitors" element={<Visitors />} />
-          <Route path="visitors/new" element={<RegisterVisitor />} />
-          <Route path="visitors/:id" element={<VisitorDetail />} />
-          <Route path="approvals" element={<Approvals />} />
-          <Route path="scanner" element={<Scanner />} />
-          <Route path="gate-history" element={<GateHistory />} />
-          <Route path="emergency" element={<Emergency />} />
-          <Route path="users" element={<Directory type="users" />} />
-          <Route path="departments" element={<Directory type="departments" />} />
-          <Route path="lookup" element={<VisitorLookup />} />
+          <Route path="dashboard" element={<Guard auth={auth} allowed={roles.dashboard}><Dashboard /></Guard>} />
+          <Route path="visitors" element={<Guard auth={auth} allowed={roles.visitors}><Visitors /></Guard>} />
+          <Route path="visitors/new" element={<Guard auth={auth} allowed={roles.visitors}><RegisterVisitor /></Guard>} />
+          <Route path="visitors/:id" element={<Guard auth={auth} allowed={roles.visitors}><VisitorDetail /></Guard>} />
+          <Route path="approvals" element={<Guard auth={auth} allowed={roles.approvals}><Approvals /></Guard>} />
+          <Route path="scanner" element={<Guard auth={auth} allowed={roles.scanner}><Scanner /></Guard>} />
+          <Route path="emergency" element={<Guard auth={auth} allowed={roles.emergency}><Emergency /></Guard>} />
+          <Route path="departments" element={<Guard auth={auth} allowed={roles.departments}><Directory type="departments" /></Guard>} />
+          <Route path="lookup" element={<Guard auth={auth} allowed={roles.lookup}><VisitorLookup /></Guard>} />
 
           {/* Seamless Aliases for Convenience */}
-          <Route path="security" element={<Scanner />} />
-          <Route path="employee" element={<Approvals />} />
-          <Route path="visitor" element={<Visitors />} />
+          <Route path="security" element={<Guard auth={auth} allowed={roles.scanner}><Scanner /></Guard>} />
+          <Route path="employee" element={<Guard auth={auth} allowed={roles.approvals}><Approvals /></Guard>} />
+          <Route path="visitor" element={<Guard auth={auth} allowed={roles.visitors}><Visitors /></Guard>} />
         </Route>
 
         <Route path="*" element={<RoleHome auth={auth} />} />

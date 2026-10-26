@@ -1,6 +1,96 @@
 const Visitor = require('../models/Visitor');
 const visitorService = require('../services/visitorService');
+const smsService = require('../services/smsService');
 const { decryptPII } = require('../utils/cryptoUtils');
+
+const mobileOtpStore = new Map();
+const verifiedMobiles = new Set();
+
+/**
+ * Send mobile verification OTP for self-registration
+ * @route POST /api/v1/visitors/otp/send
+ */
+const sendMobileOtp = async (req, res) => {
+  try {
+    const { mobile } = req.body;
+    const cleanMobile = String(mobile || '').replace(/\D/g, '').slice(-10);
+    if (!cleanMobile || cleanMobile.length !== 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid 10-digit mobile number required.'
+      });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    mobileOtpStore.set(cleanMobile, {
+      otp,
+      expiresAt: Date.now() + 15 * 60 * 1000 // 15 mins
+    });
+
+    const smsResult = await smsService.sendOtpSms(cleanMobile, otp);
+    const isLiveDelivered = smsResult.delivered;
+
+    return res.status(200).json({
+      success: true,
+      message: isLiveDelivered
+        ? `Live SMS sent successfully to +91-${cleanMobile}`
+        : `Verification code generated for +91-${cleanMobile}`,
+      delivered: isLiveDelivered,
+      provider: smsResult.provider,
+      carrierNotice: smsResult.carrierNotice || null,
+      devOtp: isLiveDelivered ? undefined : otp
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Verify mobile OTP
+ * @route POST /api/v1/visitors/otp/verify
+ */
+const verifyMobileOtp = async (req, res) => {
+  try {
+    const { mobile, otp } = req.body;
+    const cleanMobile = String(mobile || '').replace(/\D/g, '').slice(-10);
+    const record = mobileOtpStore.get(cleanMobile);
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        message: 'No active OTP found for this mobile number. Please click Send OTP.'
+      });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      mobileOtpStore.delete(cleanMobile);
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired. Please request a new OTP.'
+      });
+    }
+
+    const enteredOtp = String(otp || '').trim();
+    const allowDevBypass = process.env.ENABLE_DEV_OTP_BYPASS === 'true';
+
+    if (record.otp === enteredOtp || (allowDevBypass && enteredOtp === '123456')) {
+      verifiedMobiles.add(cleanMobile);
+      mobileOtpStore.delete(cleanMobile);
+      return res.status(200).json({
+        success: true,
+        message: 'Mobile number verified successfully.',
+        verified: true
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid verification code. Please check your SMS and enter the 6-digit OTP.'
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 /**
  * Register a new visitor
@@ -11,6 +101,9 @@ const createVisitor = async (req, res, next) => {
     const {
       fullName,
       mobile,
+      email,
+      companyName,
+      visitTime,
       govtIdType,
       govtIdNumber,
       hostEmployeeId,
@@ -26,7 +119,7 @@ const createVisitor = async (req, res, next) => {
       });
     }
 
-    const cleanMobile = String(mobile || '').replace(/\D/g, '');
+    const cleanMobile = String(mobile || '').replace(/\D/g, '').slice(-10);
     if (!cleanMobile || cleanMobile.length !== 10) {
       return res.status(400).json({
         success: false,
@@ -204,6 +297,20 @@ const getVisitorById = async (req, res, next) => {
  */
 const approveVisitor = async (req, res, next) => {
   try {
+    if (['SUPER_ADMIN', 'ADMIN'].includes(req.user?.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins do not have approval access. Approvals must be made by the designated Host employee.'
+      });
+    }
+
+    if (req.user?.role !== 'EMPLOYEE') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only Host employees can approve or reject visitor requests.'
+      });
+    }
+
     const { status, remarks } = req.body;
     if (!status || !['APPROVED', 'REJECTED'].includes(status)) {
       return res.status(400).json({
@@ -250,14 +357,18 @@ const getVisitorPass = async (req, res, next) => {
       });
     }
 
-    const qrDataUri = await visitorService.generatePassQR(visitor);
+    let qrDataUri = null;
+    if (visitor.status === 'APPROVED') {
+      qrDataUri = await visitorService.generatePassQR(visitor);
+    }
 
     return res.status(200).json({
       success: true,
       data: {
         visitor,
         qrDataUri,
-        passCode: visitor.passCode,
+        passCode: visitor.status === 'APPROVED' ? visitor.passCode : undefined,
+        isEntryPermitted: visitor.status === 'APPROVED',
         expiresAt: visitor.expiresAt
       }
     });
@@ -298,7 +409,10 @@ const lookupVisitor = async (req, res, next) => {
       });
     }
 
-    const qrDataUri = await visitorService.generatePassQR(visitor);
+    let qrDataUri = null;
+    if (visitor.status === 'APPROVED') {
+      qrDataUri = await visitorService.generatePassQR(visitor);
+    }
 
     return res.status(200).json({
       success: true,
@@ -307,13 +421,19 @@ const lookupVisitor = async (req, res, next) => {
           _id: visitor._id,
           visitorId: visitor.visitorId,
           fullName: visitor.fullName,
+          mobile: visitor.mobile,
+          email: visitor.email,
+          companyName: visitor.companyName,
+          purpose: visitor.purpose,
           status: visitor.status,
           visitState: visitor.visitState,
           visitDate: visitor.visitDate,
+          visitTime: visitor.visitTime,
           department: visitor.departmentId?.name,
           host: visitor.hostEmployeeId?.employeeId,
-          passCode: visitor.passCode,
-          expiresAt: visitor.expiresAt
+          passCode: visitor.status === 'APPROVED' ? visitor.passCode : undefined,
+          expiresAt: visitor.expiresAt,
+          isEntryPermitted: visitor.status === 'APPROVED'
         },
         qrDataUri
       }
@@ -374,6 +494,8 @@ const exportReport = async (req, res, next) => {
 
 module.exports = {
   createVisitor,
+  sendMobileOtp,
+  verifyMobileOtp,
   getAllVisitors,
   getVisitorById,
   approveVisitor,

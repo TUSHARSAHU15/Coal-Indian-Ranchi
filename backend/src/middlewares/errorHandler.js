@@ -1,10 +1,10 @@
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 /**
  * Centralized operational and unhandled error middleware
  */
 const errorHandler = (err, req, res, next) => {
-  const requestId = req.headers['x-request-id'] || uuidv4();
+  const requestId = req.headers['x-request-id'] || crypto.randomUUID();
   res.setHeader('x-request-id', requestId);
 
   console.error(`[Error] [${requestId}] ${err.name}: ${err.message}`);

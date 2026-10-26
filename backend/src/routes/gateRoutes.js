@@ -5,7 +5,7 @@ const { gateLimiter } = require('../middlewares/rateLimiter');
 
 const router = express.Router();
 
-router.post('/scan', gateLimiter, protect, authorize('SECURITY', 'ADMIN', 'SUPER_ADMIN'), scanPass);
+router.post('/scan', gateLimiter, protect, authorize('SECURITY'), scanPass);
 router.get('/status', protect, getGateStatus);
 
 module.exports = router;
