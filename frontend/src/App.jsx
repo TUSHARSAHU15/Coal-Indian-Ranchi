@@ -2706,7 +2706,7 @@ function VisitorSelfRegister() {
   const currentIdConfig = GOVT_ID_CONFIG[form.govtIdType] || GOVT_ID_CONFIG['Aadhaar Card'];
 
   return (
-    <div className="login-page">
+    <div className="dvms-register-page">
       <div className="login-visual">
         <div className="login-kicker">CCL / VISITOR SELF-REGISTRATION</div>
         <h1>
@@ -2716,26 +2716,26 @@ function VisitorSelfRegister() {
         </h1>
         <p>Apply for official Central Coalfields Limited digital entry authorization online.</p>
 
-        <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>1</span>
+        <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.82rem', color: '#cbd5e1' }}>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+            <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>1</span>
             <span>Fill your personal and visit details</span>
           </div>
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>2</span>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+            <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>2</span>
             <span>Submit pass request online</span>
           </div>
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>3</span>
-            <span>Host employee approves request</span>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+            <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>3</span>
+            <span>Host employee reviews and approves</span>
           </div>
-          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>4</span>
-            <span>Active digital QR pass issued upon approval</span>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+            <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#e2b34a', color: '#082b3a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.75rem', flexShrink: 0 }}>4</span>
+            <span>Official digital QR entry badge issued</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.8rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '2rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.14)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', padding: '0.35rem 0.65rem', borderRadius: '4px', color: '#e2b34a', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
             <ShieldCheck size={13} /> DPDP Act 2023 Compliant
           </span>
@@ -2746,178 +2746,166 @@ function VisitorSelfRegister() {
         <div className="login-rule" />
       </div>
 
-      <div className="login-panel" style={{ maxWidth: '520px' }}>
-        <div className="brand">
+      <div className="dvms-register-panel">
+        <div className="brand" style={{ marginBottom: '1.25rem' }}>
           <img
             src="/ccl_security_emblem.jpg"
             alt="CCL Emblem"
-            style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #e2b34a' }}
+            style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #e2b34a', flexShrink: 0 }}
           />
           <div>
-            <strong>DVMS</strong>
-            <span>Visitor Self-Registration Portal</span>
+            <strong style={{ fontSize: '1.2rem', color: '#0f172a' }}>DVMS</strong>
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Visitor Self-Registration Portal</span>
           </div>
         </div>
 
-        <div className="login-copy">
-          <span className="eyebrow">Online visitor application</span>
-          <h2>Request Entry Pass</h2>
-          <p>Fill in your details below to request a visitor pass from home or mobile.</p>
+        <div className="login-copy" style={{ marginBottom: '1.25rem' }}>
+          <span className="eyebrow" style={{ color: '#0d6975', fontWeight: 700, letterSpacing: '0.08em', fontSize: '0.72rem', textTransform: 'uppercase' }}>Online visitor application</span>
+          <h2 style={{ fontSize: '1.75rem', margin: '0.2rem 0', color: '#0f172a', fontWeight: 800 }}>Request Entry Pass</h2>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '0.84rem' }}>Fill in your details below to request a visitor pass for Central Coalfields Limited premises.</p>
         </div>
 
         {error && <div className="alert error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-        <form className="form-stack" onSubmit={handleSubmitPassRequest} noValidate>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-            <label>
-              Full Name <span style={{ color: '#ef4444' }}>*</span>
-              <input
-                required
-                value={form.fullName}
-                onChange={update('fullName')}
-                placeholder="e.g. Rajesh Kumar"
-                style={fieldErrors.fullName ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
-              />
-              {fieldErrors.fullName && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.fullName}</span>}
-            </label>
+        <form onSubmit={handleSubmitPassRequest} noValidate className="dvms-register-grid">
+          <label style={{ gridColumn: 'span 1' }}>
+            Full Name <span style={{ color: '#ef4444' }}>*</span>
+            <input
+              required
+              value={form.fullName}
+              onChange={update('fullName')}
+              placeholder="e.g. Rajesh Kumar"
+              style={fieldErrors.fullName ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            />
+            {fieldErrors.fullName && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.fullName}</span>}
+          </label>
 
-            <label>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Mobile Number <span style={{ color: '#ef4444' }}>*</span></span>
-                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                  {form.mobile.length}/10 digits
-                </span>
-              </div>
-              <input
-                required
-                type="tel"
-                maxLength={10}
-                value={form.mobile}
-                onChange={handleMobileChange}
-                placeholder="10-digit mobile"
-                style={fieldErrors.mobile ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
-              />
-              {fieldErrors.mobile && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.mobile}</span>}
-            </label>
-          </div>
+          <label style={{ gridColumn: 'span 1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Mobile Number <span style={{ color: '#ef4444' }}>*</span></span>
+              <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{form.mobile.length}/10 digits</span>
+            </div>
+            <input
+              required
+              type="tel"
+              maxLength={10}
+              value={form.mobile}
+              onChange={handleMobileChange}
+              placeholder="10-digit mobile number"
+              style={fieldErrors.mobile ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            />
+            {fieldErrors.mobile && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.mobile}</span>}
+          </label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-            <label>
-              Email Address <span style={{ color: '#ef4444' }}>*</span>
-              <input
-                required
-                type="email"
-                value={form.email}
-                onChange={update('email')}
-                placeholder="name@example.com"
-                style={fieldErrors.email ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
-              />
-              {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.email}</span>}
-            </label>
+          <label style={{ gridColumn: 'span 1' }}>
+            Email Address <span style={{ color: '#ef4444' }}>*</span>
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={update('email')}
+              placeholder="name@example.com"
+              style={fieldErrors.email ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            />
+            {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.email}</span>}
+          </label>
 
-            <label>
-              Company / Organization <small style={{ color: '#64748b' }}>(optional)</small>
-              <input
-                value={form.companyName}
-                onChange={update('companyName')}
-                placeholder="e.g. Tata Projects, Vendor"
-              />
-            </label>
-          </div>
+          <label style={{ gridColumn: 'span 1' }}>
+            Company / Organization <small style={{ color: '#64748b', fontWeight: 400 }}>(optional)</small>
+            <input
+              value={form.companyName}
+              onChange={update('companyName')}
+              placeholder="e.g. Tata Projects, Vendor"
+            />
+          </label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-            <label>
-              Department to Visit <span style={{ color: '#ef4444' }}>*</span>
-              <select
-                required
-                value={form.departmentId}
-                onChange={update('departmentId')}
-                style={fieldErrors.departmentId ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
-              >
-                <option value="">Select department</option>
-                {departments.map((d) => (
-                  <option key={d._id} value={d._id}>
-                    {d.name} ({d.code})
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.departmentId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.departmentId}</span>}
-            </label>
+          <label style={{ gridColumn: 'span 1' }}>
+            Department to Visit <span style={{ color: '#ef4444' }}>*</span>
+            <select
+              required
+              value={form.departmentId}
+              onChange={update('departmentId')}
+              style={fieldErrors.departmentId ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            >
+              <option value="">Select department</option>
+              {departments.map((d) => (
+                <option key={d._id} value={d._id}>
+                  {d.name} ({d.code})
+                </option>
+              ))}
+            </select>
+            {fieldErrors.departmentId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.departmentId}</span>}
+          </label>
 
-            <label>
-              Person to Visit (Host) <span style={{ color: '#ef4444' }}>*</span>
-              <select
-                required
-                value={form.hostEmployeeId}
-                onChange={update('hostEmployeeId')}
-                style={fieldErrors.hostEmployeeId ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
-              >
-                <option value="">Select host employee</option>
-                {users.filter(u => u.role === 'EMPLOYEE' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN').map((u) => (
-                  <option key={u._id} value={u._id}>
-                    {u.employeeId} ({u.role})
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.hostEmployeeId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.hostEmployeeId}</span>}
-            </label>
-          </div>
+          <label style={{ gridColumn: 'span 1' }}>
+            Person to Visit (Host) <span style={{ color: '#ef4444' }}>*</span>
+            <select
+              required
+              value={form.hostEmployeeId}
+              onChange={update('hostEmployeeId')}
+              style={fieldErrors.hostEmployeeId ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            >
+              <option value="">Select host employee</option>
+              {users.filter(u => u.role === 'EMPLOYEE' || u.role === 'SUPER_ADMIN' || u.role === 'ADMIN').map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.employeeId} ({u.role})
+                </option>
+              ))}
+            </select>
+            {fieldErrors.hostEmployeeId && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.hostEmployeeId}</span>}
+          </label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-            <label>
-              Preferred Visit Date <span style={{ color: '#ef4444' }}>*</span>
-              <input
-                required
-                type="date"
-                value={form.visitDate}
-                onChange={update('visitDate')}
-                style={fieldErrors.visitDate ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
-              />
-              {fieldErrors.visitDate && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.visitDate}</span>}
-            </label>
+          <label style={{ gridColumn: 'span 1' }}>
+            Preferred Visit Date <span style={{ color: '#ef4444' }}>*</span>
+            <input
+              required
+              type="date"
+              value={form.visitDate}
+              onChange={update('visitDate')}
+              style={fieldErrors.visitDate ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            />
+            {fieldErrors.visitDate && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.visitDate}</span>}
+          </label>
 
-            <label>
-              Preferred Arrival Time
-              <select value={form.visitTime} onChange={update('visitTime')}>
-                <option value="09:00 AM">09:00 AM - Morning Slot 1</option>
-                <option value="10:00 AM">10:00 AM - Morning Slot 2</option>
-                <option value="11:30 AM">11:30 AM - Late Morning</option>
-                <option value="02:00 PM">02:00 PM - Afternoon Slot 1</option>
-                <option value="03:30 PM">03:30 PM - Afternoon Slot 2</option>
-                <option value="05:00 PM">05:00 PM - Evening Slot</option>
-              </select>
-            </label>
-          </div>
+          <label style={{ gridColumn: 'span 1' }}>
+            Preferred Arrival Time
+            <select value={form.visitTime} onChange={update('visitTime')}>
+              <option value="09:00 AM">09:00 AM - Morning Slot 1</option>
+              <option value="10:00 AM">10:00 AM - Morning Slot 2</option>
+              <option value="11:30 AM">11:30 AM - Late Morning</option>
+              <option value="02:00 PM">02:00 PM - Afternoon Slot 1</option>
+              <option value="03:30 PM">03:30 PM - Afternoon Slot 2</option>
+              <option value="05:00 PM">05:00 PM - Evening Slot</option>
+            </select>
+          </label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-            <label>
-              ID Type <span style={{ color: '#ef4444' }}>*</span>
-              <select value={form.govtIdType} onChange={handleGovtIdTypeChange}>
-                {Object.keys(GOVT_ID_CONFIG).map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </label>
+          <label style={{ gridColumn: 'span 1' }}>
+            Government ID Type <span style={{ color: '#ef4444' }}>*</span>
+            <select value={form.govtIdType} onChange={handleGovtIdTypeChange}>
+              {Object.keys(GOVT_ID_CONFIG).map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </label>
 
-            <label>
-              {form.govtIdType} Number <span style={{ color: '#ef4444' }}>*</span>
-              <input
-                required
-                value={form.govtIdNumber}
-                onChange={handleGovtIdNumberChange}
-                placeholder={currentIdConfig.placeholder}
-                maxLength={currentIdConfig.limit}
-                style={fieldErrors.govtIdNumber ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
-              />
-              {fieldErrors.govtIdNumber ? (
-                <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.govtIdNumber}</span>
-              ) : (
-                <span style={{ color: '#64748b', fontSize: '0.7rem' }}>{currentIdConfig.hint}</span>
-              )}
-            </label>
-          </div>
+          <label style={{ gridColumn: 'span 1' }}>
+            {form.govtIdType} Number <span style={{ color: '#ef4444' }}>*</span>
+            <input
+              required
+              value={form.govtIdNumber}
+              onChange={handleGovtIdNumberChange}
+              placeholder={currentIdConfig.placeholder}
+              maxLength={currentIdConfig.limit}
+              style={fieldErrors.govtIdNumber ? { borderColor: '#ef4444', background: '#fff5f5' } : undefined}
+            />
+            {fieldErrors.govtIdNumber ? (
+              <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.govtIdNumber}</span>
+            ) : (
+              <span style={{ color: '#64748b', fontSize: '0.7rem' }}>{currentIdConfig.hint}</span>
+            )}
+          </label>
 
-          <label>
+          <label style={{ gridColumn: 'span 2' }}>
             Purpose of Visit <span style={{ color: '#ef4444' }}>*</span>
             <input
               required
@@ -2929,22 +2917,24 @@ function VisitorSelfRegister() {
             {fieldErrors.purpose && <span style={{ color: '#dc2626', fontSize: '0.7rem' }}>{fieldErrors.purpose}</span>}
           </label>
 
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={submitting}
-            style={{ marginTop: '0.75rem', width: '100%', justifyContent: 'center' }}
-          >
-            {submitting ? 'Submitting Pass Request...' : 'Submit Pass Request'} <ArrowRight size={17} />
-          </button>
+          <div style={{ gridColumn: 'span 2', marginTop: '0.5rem' }}>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={submitting}
+              style={{ width: '100%', height: '46px', fontSize: '0.92rem', justifyContent: 'center' }}
+            >
+              {submitting ? 'Submitting Pass Request...' : 'Submit Official Pass Request'} <ArrowRight size={17} />
+            </button>
+          </div>
         </form>
 
-        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <Link to="/lookup" style={{ color: '#0d6975', fontWeight: '600' }}>
+        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', fontSize: '0.82rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <Link to="/lookup" style={{ color: '#0d6975', fontWeight: '700', textDecoration: 'none' }}>
             Already registered? Track pass status &rarr;
           </Link>
-          <Link to="/login" style={{ color: '#64748b' }}>
-            Employee Sign In
+          <Link to="/login" style={{ color: '#64748b', textDecoration: 'none' }}>
+            Employee Sign In &rarr;
           </Link>
         </div>
       </div>
