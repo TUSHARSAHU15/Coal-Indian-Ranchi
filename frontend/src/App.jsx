@@ -2594,22 +2594,32 @@ function VisitorSelfRegister() {
     setError('');
 
     let sentViaFirebase = false;
+    let fbErrorMessage = '';
 
     // 1. Send live carrier SMS via Google Firebase Phone Auth (100% Free)
     try {
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
-          size: 'invisible',
-          callback: () => {}
-        });
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch(e){}
+        window.recaptchaVerifier = null;
       }
+      const recaptchaEl = document.getElementById('recaptcha-container');
+      if (recaptchaEl) {
+        recaptchaEl.innerHTML = '';
+      }
+      window.recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {}
+      });
+      await window.recaptchaVerifier.render();
+
       const confirmation = await signInWithPhoneNumber(firebaseAuth, `+91${cleanMobile}`, window.recaptchaVerifier);
       setConfirmationResult(confirmation);
       sentViaFirebase = true;
       setIsLiveDelivered(true);
-      setCarrierNotice('Live carrier SMS dispatched via Google Firebase Gateway.');
+      setCarrierNotice('📲 Live carrier SMS dispatched by Google Firebase. Please check your SMS inbox.');
     } catch (fbErr) {
-      console.warn('Firebase SMS Dispatch Note:', fbErr.message);
+      fbErrorMessage = fbErr.message || 'Firebase initialization failed';
+      console.error('Firebase Phone Auth Error:', fbErr);
       if (window.recaptchaVerifier) {
         try { window.recaptchaVerifier.clear(); } catch(e){}
         window.recaptchaVerifier = null;
@@ -2625,7 +2635,7 @@ function VisitorSelfRegister() {
       if (!sentViaFirebase) {
         setIsLiveDelivered(res.data?.delivered || false);
         setDevOtp(res.data?.devOtp || '');
-        setCarrierNotice(res.data?.carrierNotice || '');
+        setCarrierNotice(fbErrorMessage ? `Firebase Gateway: ${fbErrorMessage}` : (res.data?.carrierNotice || ''));
       } else {
         setDevOtp(res.data?.devOtp || '');
       }
