@@ -5,7 +5,7 @@ import {
   Activity, ArrowRight, BarChart3, Building2, CheckCircle2, ChevronLeft,
   ClipboardCheck, DoorOpen, LogOut, Menu, ScanLine, ShieldCheck, Users,
   UserPlus, XCircle, AlertTriangle, Printer, UserCheck, Clock, Radio, Download,
-  Camera, Trash2, Plus, Search, Lock, KeyRound
+  Camera, Trash2, Plus, Search, Lock, KeyRound, Eye, EyeOff
 } from 'lucide-react';
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -533,6 +533,7 @@ function Login({ auth }) {
   const navigate = useNavigate();
   const [employeeId, setEmployeeId] = useState('EMP-ADMIN');
   const [password, setPassword] = useState('Password@123');
+  const [showPassword, setShowPassword] = useState(false);
   const [mfa, setMfa] = useState(null);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -568,6 +569,7 @@ function Login({ auth }) {
   const quickLogin = (empId) => {
     setEmployeeId(empId);
     setPassword('Password@123');
+    setError('');
   };
 
   return (
@@ -637,14 +639,35 @@ function Login({ auth }) {
               </label>
               <label>
                 Password
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  autoComplete="current-password"
-                  required
-                />
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    autoComplete="current-password"
+                    required
+                    style={{ width: '100%', paddingRight: '2.5rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '0.65rem',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#64748b',
+                      padding: '0.2rem',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </label>
             </>
           )}
@@ -658,9 +681,14 @@ function Login({ auth }) {
 
         {/* Quick Demo Access Shortcuts for Easy Client Testing */}
         <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Quick Demo Accounts:
-          </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Quick Demo Accounts:
+            </span>
+            <span style={{ fontSize: '0.7rem', color: '#0d6975', fontWeight: '600' }}>
+              Password: <code>Password@123</code>
+            </span>
+          </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
             <button
               type="button"
