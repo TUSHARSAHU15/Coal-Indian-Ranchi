@@ -80,6 +80,22 @@ const healthHandler = (req, res) => {
 app.get('/api/health', healthHandler);
 app.get('/api/v1/health', healthHandler);
 
+// Fast-fail middleware: prevent 10s database buffering timeouts when MongoDB is disconnected
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path === '/v1/health') {
+    return next();
+  }
+  const dbConnected = mongoose.connection && mongoose.connection.readyState === 1;
+  if (!dbConnected) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database is not connected. If running on a cloud host (e.g. Render), please configure the MONGO_URI environment variable in your dashboard settings.',
+      db: 'disconnected'
+    });
+  }
+  next();
+});
+
 // API v1 Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/visitors', visitorRoutes);
@@ -181,4 +197,4 @@ if (require.main === module) {
   startServer();
 }
 
-module.exports = { app, server };
+module.exports = { app, server, startServer };
