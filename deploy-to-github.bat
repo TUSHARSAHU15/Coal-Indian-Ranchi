@@ -3,13 +3,9 @@ echo =======================================================
 echo   Push CCL Digital Visitor Management to GitHub
 echo =======================================================
 echo.
-set /p REPO_URL="Enter your GitHub Repository URL (e.g. https://github.com/username/ccl-digital-visitor.git): "
-
-if "%REPO_URL%"=="" (
-    echo Error: Repository URL cannot be empty.
-    pause
-    exit /b 1
-)
+set "DEFAULT_REPO=https://github.com/TUSHARSAHU15/Coal-Indian-Ranchi.git"
+set /p REPO_URL="Enter your GitHub Repository URL [Press Enter for %DEFAULT_REPO%]: "
+if "%REPO_URL%"=="" set REPO_URL=%DEFAULT_REPO%
 
 echo.
 echo [1/3] Renaming branch to main...
