@@ -681,14 +681,9 @@ function Login({ auth }) {
 
         {/* Quick Demo Access Shortcuts for Easy Client Testing */}
         <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Quick Demo Accounts:
-            </span>
-            <span style={{ fontSize: '0.7rem', color: '#0d6975', fontWeight: '600' }}>
-              Password: <code>Password@123</code>
-            </span>
-          </div>
+          <span style={{ fontSize: '0.72rem', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Quick Demo Accounts:
+          </span>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
             <button
               type="button"
