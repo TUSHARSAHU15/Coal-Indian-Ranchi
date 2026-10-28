@@ -7,12 +7,12 @@ echo.
 echo [1/3] Starting Backend API & WebSocket Server (Port 5000)...
 start "CCL Backend (5000)" cmd /k "cd /d %~dp0backend && node server.js"
 
-timeout /t 2 >nul
+ping 127.0.0.1 -n 3 >nul
 
 echo [2/3] Starting Frontend React UI (Port 5173)...
 start "CCL Frontend (5173)" cmd /k "cd /d %~dp0frontend && npm run dev"
 
-timeout /t 3 >nul
+ping 127.0.0.1 -n 4 >nul
 
 echo.
 echo ===================================================
